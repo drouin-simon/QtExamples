@@ -23,7 +23,7 @@ void OpenGLWidget::SetCurrentFrame( int frame )
 {
     int nbSamplesPerFrame = (int)( frameDuration * m_audioDecoder->sampleRate() );
     int sample = (int)( frameDuration * frame * m_audioDecoder->sampleRate() );
-    m_audioDecoder->seek( sample );
+    //m_audioDecoder->seek( sample );
 
     if( !m_frameData )
         m_frameData = new SAMPLE[ nbSamplesPerFrame * NUM_CHANNELS ];
@@ -49,11 +49,12 @@ void OpenGLWidget::paintGL()
     glClear( GL_COLOR_BUFFER_BIT );
 
     int nbSamplesPerFrame = (int)( frameDuration * m_audioDecoder->sampleRate() );
-    double nbSamplesPerLine = (double)height() / nbSamplesPerFrame;
+    double nbSamplesPerLine = (double)nbSamplesPerFrame / height();
     int intNbSamplesPerLine = (int)ceil( nbSamplesPerLine );
 
     QPainter painter;
     painter.begin( this );
+    painter.setPen( QColor( 0, 0, 0 ) );
 
     double middlePixels = 200.0;
 
@@ -68,8 +69,8 @@ void OpenGLWidget::paintGL()
             samplePtr += NUM_CHANNELS;
         }
         sum /= intNbSamplesPerLine;
-        double s = middlePixels + 10.0 * sum;
-        double e = middlePixels - 10.0 * sum;
+        double s = middlePixels + 10.0 * sum + 0.5;
+        double e = middlePixels - 10.0 * sum - 0.5;
         painter.drawLine( s, i, e, i );
     }
 

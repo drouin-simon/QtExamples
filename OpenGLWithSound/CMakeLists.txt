@@ -21,8 +21,8 @@ find_package(OpenGL)
 find_library( audiodecoder_lib audiodecoder )
 find_path( audiodecoder_include_dir audiodecoder.h )
 include_directories( ${audiodecoder_include_dir} )
-find_library( coreaudio_framework CoreAudio ) 
-include_directories( ${coreaudio_framework}/Headers/ )
+find_library( audiotoolbox_framework AudioToolbox )
+find_library( corefoundation_framework CoreFoundation )
 
 # Set flags to make a bundle on MAC
 if(APPLE)
@@ -49,6 +49,6 @@ qt5_wrap_cpp( proj_moc ${proj_hdr})
 
 set( proj_all_src ${proj_src} ${proj_hdr} ${proj_moc} ${proj_hdr_ui} )
 add_executable( ${ExecName} ${EXECUTABLE_FLAG} ${proj_all_src} )
-target_link_libraries( ${ExecName} ${OPENGL_gl_LIBRARY} ${QT_LIBRARIES} ${audiodecoder_lib} ${coreaudio_framework} )
+target_link_libraries( ${ExecName} ${OPENGL_gl_LIBRARY} ${QT_LIBRARIES} ${audiodecoder_lib} ${audiotoolbox_framework} ${corefoundation_framework} )
 qt5_use_modules( ${ExecName} Widgets OpenGL Multimedia )
 
