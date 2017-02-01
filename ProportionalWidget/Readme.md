@@ -1,0 +1,1 @@
+This example contains a class (AspectRatioWidget) that instanciate a child QOpenGLWidget that always maintains a 16:9 aspect ratio no matter what the size of the parent AspectRatioWidget widget is. The child widget will be the largest rectangle of the 16:9 proportion that fits into the parent.
