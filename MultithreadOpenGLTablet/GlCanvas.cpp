@@ -1,15 +1,12 @@
 #include "GlCanvas.h"
+#include "Renderer.h"
+
 #include <QTabletEvent>
 #include <QPainter>
 #include <QOpenGLContext>
 #include <QApplication>
 
-RenderThread::RenderThread()
-    : QThread()
-    , m_color(Qt::red)
-    , m_brush(m_color)
-    , m_pen(m_brush, 10.0, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin)
-    , m_canvas(0)
+RenderThread::RenderThread() : QThread(), m_canvas(0)
 {
 }
 
@@ -22,17 +19,18 @@ void RenderThread::SetCanvas( GlCanvas * c )
     m_canvas = c;
 }
 
+void RenderThread::SetRenderer( Renderer * ren )
+{
+    m_renderer = ren;
+}
+
 void RenderThread::run()
 {
+    // Do the rendering
     m_canvas->makeCurrent();
     QPainter painter( m_canvas );
     painter.setRenderHint( QPainter::Antialiasing );
-    painter.setPen( m_pen );
-    for( int i = 0; i < m_lines.size() - 1; ++i )
-    {
-        painter.drawLine( m_lines[i], m_lines[i+1] );
-    }
-    painter.end();
+    m_renderer->Render( painter );
     m_canvas->doneCurrent();
 
     // return context to main thread
@@ -50,6 +48,8 @@ GlCanvas::GlCanvas( QWidget * parent )
     m_drawing = false;
     m_renderThread = new RenderThread;
     m_renderThread->SetCanvas( this );
+    m_renderer = new Renderer;
+    m_renderThread->SetRenderer( m_renderer );
 
     connect( this, SIGNAL(aboutToCompose()), this, SLOT(startCompositing()), Qt::DirectConnection );
     connect( this, SIGNAL(frameSwapped()), this, SLOT(finishCompositing()), Qt::DirectConnection );
@@ -70,24 +70,16 @@ void GlCanvas::startCompositing()
 void GlCanvas::finishCompositing()
 {
     // buffer has just been swapped, we can start rendering again if there are pending lines to draw
-    needRender();
+    tryRender();
 }
 
-void GlCanvas::needRender()
+void GlCanvas::tryRender()
 {
-    if( m_lastPoints.size() < 2 )
-        return;
-    if( !m_renderThread->isRunning() )
+    if( !m_renderThread->isRunning() && m_renderer->NeedsRender() )
     {
         // Start rendering thread
         context()->moveToThread( m_renderThread );
-        m_renderThread->SetLines( m_lastPoints );
         m_renderThread->start();
-
-        // Clear list of points to render
-        QPointF temp = m_lastPoints[ m_lastPoints.size() - 1 ];
-        m_lastPoints.clear();
-        m_lastPoints.push_back( temp );
     }
 }
 
@@ -96,8 +88,7 @@ void GlCanvas::tabletEvent( QTabletEvent * e )
     if( e->type() == QEvent::TabletPress )
     {
         m_drawing = true;
-        m_lastPoints.clear();
-        m_lastPoints.push_back( e->posF() );
+        m_renderer->StartLine( (double)e->pos().x(), (double)e->pos().y() );
     }
     else if( e->type() == QEvent::TabletRelease )
     {
@@ -105,8 +96,8 @@ void GlCanvas::tabletEvent( QTabletEvent * e )
     }
     else if( e->type() == QEvent::TabletMove && m_drawing )
     {
-        m_lastPoints.push_back( e->posF() );
-        needRender();
+        m_renderer->AddPoint( (double)e->pos().x(), (double)e->pos().y() );
+        tryRender();
     }
     e->accept();
 }
@@ -114,8 +105,7 @@ void GlCanvas::tabletEvent( QTabletEvent * e )
 void GlCanvas::mousePressEvent( QMouseEvent * e )
 {
     m_drawing = true;
-    m_lastPoints.clear();
-    m_lastPoints.push_back( e->pos() );
+    m_renderer->StartLine( (double)e->pos().x(), (double)e->pos().y() );
 }
 
 void GlCanvas::mouseReleaseEvent(QMouseEvent*)
@@ -125,6 +115,6 @@ void GlCanvas::mouseReleaseEvent(QMouseEvent*)
 
 void GlCanvas::mouseMoveEvent(QMouseEvent*e)
 {
-    m_lastPoints.push_back( e->pos() );
-    needRender();
+    m_renderer->AddPoint( (double)e->pos().x(), (double)e->pos().y() );
+    tryRender();
 }
