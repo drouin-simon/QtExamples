@@ -40,11 +40,14 @@ protected slots:
 
     void startCompositing();
     void finishCompositing();
+    void StartResize();
+    void FinishResize();
 
 protected:
 
     // paintEvent does nothing as the painting is done in the render thread
     virtual void paintEvent( QPaintEvent * ) override {};
+    virtual void initializeGL() override;
 
     void tabletEvent(QTabletEvent *event) override;
     virtual void mousePressEvent(QMouseEvent*) override;

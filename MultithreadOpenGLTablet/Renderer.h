@@ -20,12 +20,15 @@ public:
 
     void StartLine( double x, double y );
     void AddPoint( double x, double y );
+    void Resize( int w, int h );
 
 protected:
 
     bool m_drawing;
     QMutex m_lastPointsMutex;
     QList<QPointF> m_lastPoints;
+    int m_renderSize[2];
+    bool m_resized;
 
     QColor m_color;
     QBrush m_brush;

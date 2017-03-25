@@ -10,18 +10,23 @@ Renderer::Renderer()
 
 bool Renderer::NeedsRender()
 {
-    return m_lastPoints.size() >= 2;
+    return m_lastPoints.size() >= 2 || m_resized;
 }
 
 void Renderer::Render( QPainter & painter )
 {
+    m_resized = false;
+
     // Take a copy of accumulated points to avoid locking access to
     // the cue for too long
     m_lastPointsMutex.lock();
     QList<QPointF> lines( m_lastPoints );
-    QPointF temp = m_lastPoints[ m_lastPoints.size() - 1 ];
-    m_lastPoints.clear();
-    m_lastPoints.push_back( temp );
+    if( m_lastPoints.size() > 1 )
+    {
+        QPointF temp = m_lastPoints[ m_lastPoints.size() - 1 ];
+        m_lastPoints.clear();
+        m_lastPoints.push_back( temp );
+    }
     m_lastPointsMutex.unlock();
 
     // Do the drawing
@@ -30,7 +35,10 @@ void Renderer::Render( QPainter & painter )
     {
         painter.drawLine( lines[i], lines[i+1] );
     }
+
+    painter.drawEllipse( m_renderSize[0] - 30, m_renderSize[1] - 30, 20, 20 );
     painter.end();
+
 }
 
 void Renderer::StartLine( double x, double y )
@@ -46,4 +54,11 @@ void Renderer::AddPoint( double x, double y )
     m_lastPointsMutex.lock();
     m_lastPoints.push_back( QPointF( x, y ) );
     m_lastPointsMutex.unlock();
+}
+
+void Renderer::Resize( int w, int h )
+{
+    m_renderSize[0] = w;
+    m_renderSize[1] = h;
+    m_resized = true;
 }
